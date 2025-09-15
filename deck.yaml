@@ -1,0 +1,5 @@
+stateStore:
+driver: sqlite
+dsn: ./state.db
+secrets:
+provider: env

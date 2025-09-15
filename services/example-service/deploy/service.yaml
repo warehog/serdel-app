@@ -1,0 +1,28 @@
+apiVersion: deck/v1
+kind: Service
+metadata:
+  name: example-service
+  labels: { tier: web }
+spec:
+  deployment:
+    method: compose
+    source:
+      path: ./deploy/compose.yaml
+    target: node-docker-01
+    strategy:
+      healthCheck:
+        type: http
+        url: http://{targetHost}:8080/health
+        timeoutSeconds: 10
+        retries: 6
+  storage:
+    volumes:
+      - name: app-data
+        mountPath: /var/lib/app
+        kind: hostPath
+    backup:
+      driver: restic
+      schedule: "0 3 * * *"
+      includes: ["/var/lib/app"]
+      repository: s3://s3.example.com/backups/example-service
+      credentialsRef: s3_backup

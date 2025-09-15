@@ -1,0 +1,9 @@
+version: "3.8"
+services:
+  app:
+    image: ghcr.io/yourorg/example:latest
+    ports: ["8080:8080"]
+    volumes:
+      - app-data:/var/lib/app
+volumes:
+  app-data: {}

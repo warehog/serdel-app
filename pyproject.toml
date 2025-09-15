@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling>=1.25.0"]
+build-backend = "hatchling.build"
+
+[project]
+name = "deck"
+version = "0.0.1"
+description = "CLI to deploy, backup and migrate services across Docker/Kubernetes/SSH targets (skeleton)"
+readme = "README.md"
+authors = [{ name = "Mateusz Wójcik" }]
+requires-python = ">=3.10"
+dependencies = [
+  "typer[all]>=0.12.3",
+  "pydantic>=2.6",
+  "PyYAML>=6.0.1",
+  "rich>=13.7",
+  "sqlalchemy>=2.0.25",
+]
+
+[project.scripts]
+deck = "deck.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/deck"]

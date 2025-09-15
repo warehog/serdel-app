@@ -1,0 +1,12 @@
+targets:
+  - name: node-docker-01
+    type: docker
+    connection:
+      dockerHost: tcp://192.168.20.11:2375
+      tls: false
+  - name: localhost
+    type: ssh
+    connection:
+      user: postio-admin
+      host: localhost
+      port: 22
