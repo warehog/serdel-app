@@ -18,13 +18,13 @@ class Target:
 
 
 @dataclass
-class TargetCheckResult:
+class TargetInfo:
     name: str
     type: str
     endpoint: str
-    reachable: bool
-    latency_ms: Optional[float]
-    detail: str
+    reachable: Optional[bool] = None
+    latency_ms: Optional[float] = None
+    detail: Optional[str] = None
 
 
 DEFAULT_INVENTORY_PATH = Path("targets") / "inventory.yaml"
@@ -60,17 +60,25 @@ def endpoint_for(t: Target) -> str:
     return ""
 
 
-def check_target(t: Target, timeout: float = 5.0) -> TargetCheckResult:
+def check_target(t: Target, timeout: float = 5.0) -> TargetInfo:
     if t.type == "docker":
         ok, detail, ms = _check_docker(t.connection, timeout)
-        return TargetCheckResult(t.name, t.type, endpoint_for(t), ok, ms, detail)
+        return TargetInfo(t.name, t.type, endpoint_for(t), ok, ms, detail)
     if t.type == "kubernetes":
         ok, detail, ms = _check_k8s(t.connection, timeout)
-        return TargetCheckResult(t.name, t.type, endpoint_for(t), ok, ms, detail)
+        return TargetInfo(t.name, t.type, endpoint_for(t), ok, ms, detail)
     if t.type == "ssh":
         ok, detail, ms = _check_ssh(t.connection, timeout)
-        return TargetCheckResult(t.name, t.type, endpoint_for(t), ok, ms, detail)
-    return TargetCheckResult(t.name, t.type, endpoint_for(t), False, None, "unknown target type")
+        return TargetInfo(t.name, t.type, endpoint_for(t), ok, ms, detail)
+    return TargetInfo(t.name, t.type, endpoint_for(t), False, None, "unknown target type")
+
+
+def list_targets(check: bool = False, inventory_path: Optional[Path] = None) -> List[TargetInfo]:
+    """Return inventory targets, optionally checked for connectivity."""
+    targets = load_inventory(inventory_path)
+    if check:
+        return [check_target(t) for t in targets]
+    return [TargetInfo(t.name, t.type, endpoint_for(t)) for t in targets]
 
 
 def _check_docker(conn: Dict[str, str], timeout: float) -> Tuple[bool, str, Optional[float]]:

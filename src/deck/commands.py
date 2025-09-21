@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import asdict
 from pathlib import Path
 from typing import Optional
 
@@ -11,7 +12,7 @@ from .context import Ctx
 from .config import load_service_spec, list_services
 from .providers.backup import ResticBackup
 from .providers.deploy import ComposeDeployer, DeployOptions
-from .providers.targets import check_target, endpoint_for, load_inventory
+from .providers.targets import list_targets as gather_targets
 
 
 def status(c: Ctx, service: Optional[str]) -> None:
@@ -144,40 +145,10 @@ def stop(c: Ctx, service: str) -> None:
 def list_targets(c: Ctx, check: bool, inventory: Optional[str]) -> None:
     """List all targets; optionally check connectivity."""
     inv_path = Path(inventory) if inventory else None
-    targets = load_inventory(inv_path)
+    targets = gather_targets(check=check, inventory_path=inv_path)
 
     if c.json_out:
-        if check:
-            results = []
-            for t in targets:
-                r = check_target(t)
-                results.append(
-                    {
-                        "name": r.name,
-                        "type": r.type,
-                        "endpoint": r.endpoint,
-                        "reachable": r.reachable,
-                        "latency_ms": r.latency_ms,
-                        "detail": r.detail,
-                    }
-                )
-            print(json.dumps({"targets": results}, indent=2))
-        else:
-            print(
-                json.dumps(
-                    {
-                        "targets": [
-                            {
-                                "name": t.name,
-                                "type": t.type,
-                                "endpoint": endpoint_for(t),
-                            }
-                            for t in targets
-                        ]
-                    },
-                    indent=2,
-                )
-            )
+        print(json.dumps({"targets": [asdict(t) for t in targets]}, indent=2))
         return
 
     title = "Targets (checked)" if check else "Targets"
@@ -191,18 +162,16 @@ def list_targets(c: Ctx, check: bool, inventory: Optional[str]) -> None:
         table.add_column("Detail")
 
     for t in targets:
-        ep = endpoint_for(t)
         if check:
-            r = check_target(t)
             table.add_row(
-                r.name,
-                r.type,
-                r.endpoint,
-                "✅" if r.reachable else "❌",
-                f"{r.latency_ms:.1f}" if r.latency_ms is not None else "-",
-                r.detail,
+                t.name,
+                t.type,
+                t.endpoint,
+                "✅" if t.reachable else "❌",
+                f"{t.latency_ms:.1f}" if t.latency_ms is not None else "-",
+                t.detail or "",
             )
         else:
-            table.add_row(t.name, t.type, ep)
+            table.add_row(t.name, t.type, t.endpoint)
 
     c.console.print(table)
